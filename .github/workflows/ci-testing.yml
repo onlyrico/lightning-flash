@@ -19,6 +19,68 @@ jobs:
         os: [ubuntu-20.04, macOS-10.15, windows-2019]
         python-version: [3.6, 3.8]
         requires: ['minimal', 'latest']
+        topic: [['devel']]
+        release: [ 'stable' ]
+        exclude:
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+        include:
+          - os: ubuntu-20.04
+            python-version: 3.9
+            requires: 'latest'
+            topic: ['devel']
+            release: 'pre'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['image']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['image','image_extras']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['video']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['video','video_extras']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['tabular']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['text']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['pointcloud']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['serve']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['graph']
+            release: 'stable'
+          - os: ubuntu-20.04
+            python-version: 3.8
+            requires: 'latest'
+            topic: ['audio']
+            release: 'stable'
 
     # Timeout: https://stackoverflow.com/a/59076067/4521646
     timeout-minutes: 35
@@ -36,6 +98,11 @@ jobs:
       run: |
         brew update
         brew install libomp  # https://github.com/pytorch/pytorch/issues/20030
+
+    - name: Install graphviz
+      if: matrix.topic[0] == 'serve'
+      run: |
+        sudo apt-get install graphviz
 
     - name: Set min. dependencies
       if: matrix.requires == 'minimal'
@@ -62,18 +129,37 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-${{ hashFiles('requirements.txt') }}
+        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ join(matrix.topic,'-') }}-${{ matrix.requires }}-pip-${{ hashFiles('requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-
+          ${{ runner.os }}-${{ matrix.python-version }}-${{ join(matrix.topic,'-') }}-${{ matrix.requires }}-pip-
+
+    - name: Install vissl
+      if: matrix.topic[1] == 'image_extras'
+      run: |
+        pip install git+https://github.com/facebookresearch/vissl.git@master
 
     - name: Install dependencies
       run: |
         python --version
         pip --version
-        pip install --requirement requirements/devel.txt --pre --upgrade --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-        pip install -e . --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+        flag=$(python -c "print('--pre' if '${{matrix.release}}' == 'pre' else '')" 2>&1)
+        pip install torch>=1.7.1
+        pip install '.[${{ join(matrix.topic,',') }}]' --upgrade $flag --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+        pip install '.[test]' --upgrade
         pip list
       shell: bash
+
+    - name: Install serve test dependencies
+      if: matrix.topic[0] == 'serve'
+      run: |
+        pip install '.[all]' --upgrade
+
+    - name: Install audio test dependencies
+      if: matrix.topic[0] == 'audio'
+      run: |
+        sudo apt-get install libsndfile1
+        pip install matplotlib
+        pip install '.[audio,image]' --upgrade
 
     - name: Cache datasets
       uses: actions/cache@v2
@@ -83,6 +169,9 @@ jobs:
         restore-keys: lightning-flash-datasets-
 
     - name: Tests
+      env:
+        FLASH_TEST_TOPIC: ${{ join(matrix.topic,',') }}
+        FIFTYONE_DO_NOT_TRACK: true
       run: |
         # tox --sitepackages
         coverage run --source flash -m pytest flash tests -v --junitxml=junit/test-results-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}.xml
@@ -110,3 +199,8 @@ jobs:
         env_vars: OS,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
+
+    - name: Uninstall
+      run: |
+        pip uninstall lightning-flash -y
+      shell: bash

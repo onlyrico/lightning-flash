@@ -1,3 +1,8 @@
+.. customcarditem::
+   :header: Image Classification
+   :card_description: Learn to classify images with Flash and build an example Ants / Bees classifier.
+   :image: https://pl-flash-data.s3.amazonaws.com/assets/thumbnails/image_classification.jpg
+   :tags: Image,Classification
 
 .. _image_classification:
 
@@ -6,61 +11,22 @@ Image Classification
 ####################
 
 ********
-The task
+The Task
 ********
-The task of identifying what is in an image is called image classification. Typically, Image Classification is used to identify images containing a single object. The task predicts which ‘class’ the image most likely belongs to with a degree of certainty.  A class is a label that describes what is in an image, such as ‘car’, ‘house’, ‘cat’ etc. For example, we can train the image classifier task on images of ants and it will learn to predict the probability that an image contains an ant.
+
+The task of identifying what is in an image is called image classification.
+Typically, Image Classification is used to identify images containing a single object.
+The task predicts which ‘class’ the image most likely belongs to with a degree of certainty.
+A class is a label that describes what is in an image, such as ‘car’, ‘house’, ‘cat’ etc.
 
 ------
 
-*********
-Inference
-*********
+*******
+Example
+*******
 
-The :class:`~flash.vision.ImageClassifier` is already pre-trained on `ImageNet <http://www.image-net.org/>`_, a dataset of over 14 million images.
-
-
-Use the :class:`~flash.vision.ImageClassifier` pretrained model for inference on any string sequence using :func:`~flash.vision.ImageClassifier.predict`:
-
-.. code-block:: python
-
-    # import our libraries
-    from flash import Trainer
-    from flash.data.utils import download_data
-    from flash.vision import ImageClassificationData, ImageClassifier
-
-    # 1. Download the data
-    download_data("https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip", "data/")
-
-    # 2. Load the model from a checkpoint
-    model = ImageClassifier.load_from_checkpoint(
-        "https://flash-weights.s3.amazonaws.com/image_classification_model.pt"
-    )
-
-    # 3a. Predict what's on a few images! ants or bees?
-    predictions = model.predict([
-        "data/hymenoptera_data/val/bees/65038344_52a45d090d.jpg",
-        "data/hymenoptera_data/val/bees/590318879_68cf112861.jpg",
-        "data/hymenoptera_data/val/ants/540543309_ddbb193ee5.jpg",
-    ])
-    print(predictions)
-
-    # 3b. Or generate predictions with a whole folder!
-    datamodule = ImageClassificationData.from_folders(predict_folder="data/hymenoptera_data/predict/")
-    predictions = Trainer().predict(model, datamodule=datamodule)
-    print(predictions)
-
-For more advanced inference options, see :ref:`predictions`.
-
-------
-
-**********
-Finetuning
-**********
-
-Lets say you wanted to develope a model that could determine whether an image contains **ants** or **bees**, using the hymenoptera dataset.
-Once we download the data using :func:`~flash.data.download_data`, all we need is the train data and validation data folders to create the :class:`~flash.vision.ImageClassificationData`.
-
-.. note:: The dataset contains ``train`` and ``validation`` folders, and then each folder contains a **bees** folder, with pictures of bees, and an **ants** folder with images of, you guessed it, ants.
+Let's look at the task of predicting whether images contain Ants or Bees using the hymenoptera dataset.
+The dataset contains ``train`` and ``validation`` folders, and then each folder contains a **bees** folder, with pictures of bees, and an **ants** folder with images of, you guessed it, ants.
 
 .. code-block::
 
@@ -84,103 +50,119 @@ Once we download the data using :func:`~flash.data.download_data`, all we need i
             ├── 10870992_eebeeb3a12.jpg
             ...
 
+Once we've downloaded the data using :func:`~flash.core.data.download_data`, we create the :class:`~flash.image.classification.data.ImageClassificationData`.
+We select a pre-trained backbone to use for our :class:`~flash.image.classification.model.ImageClassifier` and fine-tune on the hymenoptera data.
+We then use the trained :class:`~flash.image.classification.model.ImageClassifier` for inference.
+Finally, we save the model.
+Here's the full example:
 
-Now all we need is three lines of code to build to train our task!
+.. literalinclude:: ../../../flash_examples/image_classification.py
+    :language: python
+    :lines: 14-
 
-.. code-block:: python
+------
+
+**********
+Flash Zero
+**********
+
+The image classifier can be used directly from the command line with zero code using :ref:`flash_zero`.
+You can run the hymenoptera example with:
+
+.. code-block:: bash
+
+    flash image_classification
+
+To view configuration options and options for running the image classifier with your own data, use:
+
+.. code-block:: bash
+
+    flash image_classification --help
+
+------
+
+************
+Loading Data
+************
+
+.. autodatasources:: flash.image.classification.data ImageClassificationData
+
+    {% extends "base.rst" %}
+    {% block from_datasets %}
+    {{ super() }}
+
+    .. note::
+
+        The ``__getitem__`` of your datasets should return a dictionary with ``"input"`` and ``"target"`` keys which map to the input image (as a PIL.Image) and the target (as an int or list of ints) respectively.
+    {% endblock %}
+
+------
+
+**********************
+Custom Transformations
+**********************
+
+Flash automatically applies some default image transformations and augmentations, but you may wish to customize these for your own use case.
+The base :class:`~flash.core.data.process.Preprocess` defines 7 hooks for different stages in the data loading pipeline.
+To apply image augmentations you can directly import the ``default_transforms`` from ``flash.image.classification.transforms`` and then merge your custom image transformations with them using the :func:`~flash.core.data.transforms.merge_transforms` helper function.
+Here's an example where we load the default transforms and merge with custom `torchvision` transformations.
+We use the `post_tensor_transform` hook to apply the transformations after the image has been converted to a `torch.Tensor`.
+
+
+.. testsetup:: transformations
+
+    from flash.core.data.utils import download_data
+
+    download_data("https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip", "./data")
+
+.. testcode:: transformations
+
+    from torchvision import transforms as T
 
     import flash
-    from flash.data.utils import download_data
-    from flash.vision import ImageClassificationData, ImageClassifier
+    from flash.core.data.data_source import DefaultDataKeys
+    from flash.core.data.transforms import ApplyToKeys, merge_transforms
+    from flash.image import ImageClassificationData, ImageClassifier
+    from flash.image.classification.transforms import default_transforms
 
-    # 1. Download the data
-    download_data("https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip", "data/")
-
-    # 2. Load the data
-    datamodule = ImageClassificationData.from_folders(
-        train_folder="data/hymenoptera_data/train/",
-        valid_folder="data/hymenoptera_data/val/",
-        test_folder="data/hymenoptera_data/test/",
+    post_tensor_transform = ApplyToKeys(
+        DefaultDataKeys.INPUT,
+        T.Compose([T.RandomHorizontalFlip(), T.ColorJitter(), T.RandomAutocontrast(), T.RandomPerspective()]),
     )
 
-    # 3. Build the model
+    new_transforms = merge_transforms(default_transforms((64, 64)), {"post_tensor_transform": post_tensor_transform})
+
+    datamodule = ImageClassificationData.from_folders(
+        train_folder="data/hymenoptera_data/train/", val_folder="data/hymenoptera_data/val/", train_transform=new_transforms
+    )
+
     model = ImageClassifier(backbone="resnet18", num_classes=datamodule.num_classes)
 
-    # 4. Create the trainer. Run once on data
     trainer = flash.Trainer(max_epochs=1)
+    trainer.finetune(model, datamodule=datamodule, strategy="freeze")
 
-    # 5. Train the model
-    trainer.finetune(model, datamodule=datamodule, strategy="freeze_unfreeze")
 
-    # 6. Test the model
-    trainer.test()
+.. testoutput:: transformations
+    :hide:
 
-    # 7. Save it!
-    trainer.save_checkpoint("image_classification_model.pt")
+    ...
 
 ------
 
-*********************
-Changing the backbone
-*********************
-By default, we use a `ResNet-18 <https://arxiv.org/abs/1512.03385>`_ for image classification. You can change the model run by the task by passing in a different backbone.
+*******
+Serving
+*******
 
-.. note::
+The :class:`~flash.image.classification.model.ImageClassifier` is servable.
+This means you can call ``.serve`` to serve your :class:`~flash.core.model.Task`.
+Here's an example:
 
-    When changing the backbone, make sure you pass in the same backbone to the Task and the Data object!
+.. literalinclude:: ../../../flash_examples/serve/image_classification/inference_server.py
+    :language: python
+    :lines: 14-
 
-.. code-block:: python
+You can now perform inference from your client like this:
 
-    # 1. organize the data
-    data = ImageClassificationData.from_folders(
-        backbone="resnet34",
-        train_folder="data/hymenoptera_data/train/",
-        valid_folder="data/hymenoptera_data/val/"
-    )
-
-    # 2. build the task
-    task = ImageClassifier(num_classes=2, backbone="resnet34")
-
-Available backbones:
-
-* resnet18 (default)
-* resnet34
-* resnet50
-* resnet101
-* resnet152
-* resnext50_32x4d
-* resnext101_32x8d
-* mobilenet_v2
-* vgg11
-* vgg13
-* vgg16
-* vgg19
-* densenet121
-* densenet169
-* densenet161
-* swav-imagenet
-* `TIMM <https://rwightman.github.io/pytorch-image-models/>`_ (130+ PyTorch Image Models)
-
-------
-
-*************
-API reference
-*************
-
-.. _image_classifier:
-
-ImageClassifier
----------------
-
-.. autoclass:: flash.vision.ImageClassifier
-    :members:
-    :exclude-members: forward
-
-.. _image_classification_data:
-
-ImageClassificationData
------------------------
-
-.. autoclass:: flash.vision.ImageClassificationData
-
-.. autoclass:: flash.vision.ImageClassificationPreprocess
+.. literalinclude:: ../../../flash_examples/serve/image_classification/client.py
+    :language: python
+    :lines: 14-

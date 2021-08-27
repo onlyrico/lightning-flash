@@ -6,52 +6,140 @@
 Lightning Flash
 ===============
 
+.. tutoriallist::
+
+.. raw:: html
+
+   <div style="display:none">
+
 .. toctree::
    :maxdepth: 1
-   :caption: Get started:
+   :caption: Getting started
 
    quickstart
    installation
    custom_task
    reference/flash_to_pl
+   reference/flash_to_production
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tasks
-
-   reference/task
-   reference/image_classification
-   reference/image_embedder
-   reference/multi_label_classification
-   reference/summarization
-   reference/text_classification
-   reference/tabular_classification
-   reference/translation
-   reference/object_detection
-   reference/video_classification
-   reference/semantic_segmentation
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Flash API
-
-   general/model
-   general/data
-   general/callback
-   general/registry
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Common Use Cases
+   :caption: Guides
 
    general/training
    general/finetuning
    general/predictions
+   general/jit
+   general/data
+   general/registry
+   general/flash_zero
+   general/serve
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Image and Video
+
+   reference/image_classification
+   reference/image_classification_multi_label
+   reference/image_embedder
+   reference/object_detection
+   reference/keypoint_detection
+   reference/instance_segmentation
+   reference/semantic_segmentation
+   reference/style_transfer
+   reference/video_classification
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Audio
+
+   reference/audio_classification
+   reference/speech_recognition
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tabular
+
+   reference/tabular_classification
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Text
+
+   reference/text_classification
+   reference/text_classification_multi_label
+   reference/summarization
+   reference/translation
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Point Cloud
+
+   reference/pointcloud_segmentation
+   reference/pointcloud_object_detection
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Graph
+
+   reference/graph_classification
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Integrations
+
+   integrations/providers
+   integrations/fiftyone
+   integrations/icevision
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
+
+   api/flash
+   api/core
+   api/data
+   api/serve
+   api/image
+   api/audio
+   api/pointcloud
+   api/tabular
+   api/text
+   api/video
+   api/graph
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contributing a Task
+
+   template/intro
+   template/data
+   template/backbones
+   template/task
+   template/optional
+   template/examples
+   template/tests
+   template/docs
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Community
+
+   governance
+   generated/CONTRIBUTING.md
+   generated/CHANGELOG.md
+
+.. toctree::
+   :hidden:
+
+   reference/template
+
+.. raw:: html
+
+   </div>
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
